@@ -17,10 +17,6 @@ data Change = Remove Int
 type Experiment = (Menu, Change)
 type ExperimentResult = Int
 
-
-possibleItems :: [Item]
-possibleItems = "ХКПЛ"
-
 defaultItem :: Item
 defaultItem = 'Х'
 
