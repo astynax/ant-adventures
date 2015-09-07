@@ -17,13 +17,11 @@ data Change = Remove Int
 type Experiment = (Menu, Change)
 type ExperimentResult = Int
 
-defaultItem :: Item
-defaultItem = 'Х'
 
-
-weightOfChange :: (Item, Item) -> (Item, Item) -> Int
-weightOfChange p1 p2 =
-  fromJust $ try (p1, p2) <|> try (p2, p1) <|> pure 100
+weightOfChange :: ((Item, Item), (Item, Item)) -> Int
+weightOfChange (p1, p2)
+  | p1 == p2  = 0
+  | otherwise = fromJust $ try (p1, p2) <|> try (p2, p1) <|> pure 100
   where
     try = (`SM.lookup` rules)
     rules = foldr insertGroup SM.empty weights
@@ -81,10 +79,10 @@ readExperiment s = (menu, change)
 
 calculate :: Experiment -> ExperimentResult
 calculate (menu, act) =
-  sum $ zipWith weightOfChange (pairwise menu) (pairwise changedMenu)
+  sum $ map weightOfChange $ zip (pairwise menu) (pairwise changedMenu)
   where
     pairwise []         = []
-    pairwise (x:[])     = pairwise $ x : defaultItem : []
+    pairwise (x:[])     = pairwise $ x : 'Х' : []
     pairwise (x:y:rest) = (x, y) : pairwise rest
 
     changedMenu =
@@ -93,7 +91,8 @@ calculate (menu, act) =
         Insert  i x -> modifyAt i (\y -> [y, x])
         Replace i x -> modifyAt i (const [x])
       where
-        modifyAt i f = let (prefix, x:suffix) = splitAt i menu
+        modifyAt i f = let pos = i - 1
+                           (prefix, x:suffix) = splitAt pos menu
                        in  prefix ++ (f x) ++ suffix
 
 
