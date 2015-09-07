@@ -90,7 +90,7 @@ calculate (menu, act) =
     changedMenu =
       case act of
         Remove  i   -> modifyAt i (const [])
-        Insert  i x -> modifyAt i (\y -> [x, y])
+        Insert  i x -> modifyAt i (\y -> [y, x])
         Replace i x -> modifyAt i (const [x])
       where
         modifyAt i f = let (prefix, x:suffix) = splitAt i menu
