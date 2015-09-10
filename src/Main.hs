@@ -26,8 +26,9 @@ weightOfChange (p1, p2)
     try = (`SM.lookup` rules)
     rules = foldr insertGroup SM.empty weights
       where
-        insertGroup (w, pairs) m = foldr (`SM.insert` w) m $ map asKey pairs
+        insertGroup (w, pairs) m = foldr ((`SM.insert` w) . asKey) m pairs
         asKey (l1:r1:_:l2:r2:_) = ((l1, r1), (l2, r2))
+        asKey _                 = undefined  -- for hlint specially
 
     weights = [(0, ["КЛ-КХ"
                    ,"ЛК-ЛП"
@@ -61,8 +62,8 @@ readExperiment s = (menu, change)
     change = parseChange rawChange
 
     (menu, rawChange) =
-      let (xs, ys) = break     (== ':')            s
-          y        = dropWhile (`elem` [':', ' ']) ys
+      let (xs, ys) = break     (== ':')      s
+          y        = dropWhile (`elem` ": ") ys
       in  (xs, y)
 
     parseChange raw =
@@ -70,19 +71,23 @@ readExperiment s = (menu, change)
         "удл" -> Remove  idx
         "вст" -> Insert  idx itm
         "изм" -> Replace idx itm
+        _     -> error   "Unknown action!"
       where
         idx            = read idx'
         itm            = head itm'
         (action, itm') = splitAt 3 raw'
-        (idx', raw')   = break (not . isDigit) raw
+        (idx', raw')   = span isDigit raw
 
 
 calculate :: Experiment -> ExperimentResult
 calculate (menu, act) =
-  sum $ map weightOfChange $ zip (pairwise menu) (pairwise changedMenu)
+  sum
+  $ zipWith (curry weightOfChange) (prepare menu) (prepare changedMenu)
   where
+    prepare = fillAfterStopPair . pairwise
+
     pairwise []         = []
-    pairwise (x:[])     = pairwise $ x : 'Х' : []
+    pairwise [x]        = pairwise [x, 'Х']
     pairwise (x:y:rest) = (x, y) : pairwise rest
 
     changedMenu =
@@ -93,7 +98,17 @@ calculate (menu, act) =
       where
         modifyAt i f = let pos = i - 1
                            (prefix, x:suffix) = splitAt pos menu
-                       in  prefix ++ (f x) ++ suffix
+                       in  prefix ++ f x ++ suffix
+
+    fillAfterStopPair = go False
+      where
+        go _         []     = []
+        go True      (_:xs) = stopPair : go True xs
+        go False xs'@(x:xs)
+          | x == stopPair =     go True  xs'
+          | otherwise     = x : go False xs
+
+    stopPair = ('Х', 'Х')
 
 
 showResult :: ExperimentResult -> String
