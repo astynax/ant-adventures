@@ -84,7 +84,7 @@ calculate (menu, act) =
   sum
   $ zipWith (curry weightOfChange) (prepare menu) (prepare changedMenu)
   where
-    prepare = fillAfterStopPair . pairwise
+    prepare = fillAfter stopPair . pairwise
 
     pairwise []         = []
     pairwise [x]        = pairwise [x, 'Х']
@@ -100,13 +100,12 @@ calculate (menu, act) =
                            (prefix, x:suffix) = splitAt pos menu
                        in  prefix ++ f x ++ suffix
 
-    fillAfterStopPair = go False
+    fillAfter x = go False
       where
-        go _         []     = []
-        go True      (_:xs) = stopPair : go True xs
-        go False xs'@(x:xs)
-          | x == stopPair =     go True  xs'
-          | otherwise     = x : go False xs
+        go _ []         = []
+        go f (y:ys)
+          | f || y == x = x : go True  ys
+          | otherwise   = y : go False ys
 
     stopPair = ('Х', 'Х')
 
